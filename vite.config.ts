@@ -34,4 +34,5 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+  base: '/App_budget_flow/',
 });

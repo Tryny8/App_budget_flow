@@ -1177,7 +1177,7 @@ export default function BudgetDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
+            <Tabs  value={settingsTab} onValueChange={setSettingsTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="income" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -1198,152 +1198,152 @@ export default function BudgetDashboard() {
               </TabsList>
 
               {/* Income Sub-Tab */}
-              <Tabs value="income">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Income Form */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{editingIncome ? "Modifier le Revenu" : "Ajouter un Revenu"}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Form {...incomeForm}>
-                        <form onSubmit={incomeForm.handleSubmit(onIncomeSubmit)} className="space-y-4">
-                          <FormField
-                            control={incomeForm.control}
-                            name="description"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Ex: Salaire, Freelance..." {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+              <TabsContent value="income">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Income Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingIncome ? "Modifier le Revenu" : "Ajouter un Revenu"}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Form {...incomeForm}>
+                    <form onSubmit={incomeForm.handleSubmit(onIncomeSubmit)} className="space-y-4">
+                      <FormField
+                        control={incomeForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Salaire, Freelance..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                          <FormField
-                            control={incomeForm.control}
-                            name="amount"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Montant (€)</FormLabel>
-                                <FormControl>
-                                  <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                      <FormField
+                        control={incomeForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Montant (€)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                          <FormField
-                            control={incomeForm.control}
-                            name="frequency"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Fréquence</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionner la fréquence" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="monthly">Mensuel</SelectItem>
-                                    <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                                    <SelectItem value="yearly">Annuel</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                      <FormField
+                        control={incomeForm.control}
+                        name="frequency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fréquence</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Sélectionner la fréquence" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="monthly">Mensuel</SelectItem>
+                                <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                                <SelectItem value="yearly">Annuel</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                          <FormField
-                            control={incomeForm.control}
-                            name="incomeDate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Date de Crédit (jour du mois)</FormLabel>
-                                <FormControl>
-                                  <Input type="number" min="1" max="31" placeholder="Ex: 25" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                      <FormField
+                        control={incomeForm.control}
+                        name="incomeDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date de Crédit (jour du mois)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="1" max="31" placeholder="Ex: 25" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                          <div className="flex gap-2">
-                            <Button 
-                              type="submit" 
-                              className="flex-1"
-                              disabled={createIncomeMutation.isPending || updateIncomeMutation.isPending}
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              {editingIncome ? "Modifier" : "Ajouter"}
-                            </Button>
-                            {editingIncome && (
-                              <Button type="button" variant="outline" onClick={cancelEdit}>
-                                Annuler
-                              </Button>
-                            )}
-                          </div>
-                        </form>
-                      </Form>
-                    </CardContent>
-                  </Card>
-
-                  {/* Income List */}
-                  <Card className="lg:col-span-2">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle>Liste des Revenus</CardTitle>
-                        <div className="text-sm text-gray-500">
-                          Total: <span className="font-semibold text-green-600">{formatCurrency(totalIncome)}</span>
-                        </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          type="submit" 
+                          className="flex-1"
+                          disabled={createIncomeMutation.isPending || updateIncomeMutation.isPending}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          {editingIncome ? "Modifier" : "Ajouter"}
+                        </Button>
+                        {editingIncome && (
+                          <Button type="button" variant="outline" onClick={cancelEdit}>
+                            Annuler
+                          </Button>
+                        )}
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {incomes.map((income) => {
-                          const IconComponent = getIncomeIcon(income.description);
-                          return (
-                            <div key={income.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                              <div className="flex items-center">
-                                <div className="p-2 bg-green-100 rounded-lg mr-4">
-                                  <IconComponent className="h-5 w-5 text-green-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{income.description}</h4>
-                                  <p className="text-sm text-gray-500">
-                                    {getFrequencyLabel(income.frequency)} 
-                                    {income.incomeDate && ` • Le ${income.incomeDate} du mois`}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-4">
-                                <span className="font-semibold text-green-600">{formatCurrency(Number(income.amount))}</span>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditIncome(income)}
-                                    className="text-gray-400 hover:text-blue-600"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteIncomeMutation.mutate(income.id)}
-                                    className="text-gray-400 hover:text-red-600"
-                                    disabled={deleteIncomeMutation.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+
+              {/* Income List */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Liste des Revenus</CardTitle>
+                    <div className="text-sm text-gray-500">
+                      Total: <span className="font-semibold text-green-600">{formatCurrency(totalIncome)}</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {incomes.map((income) => {
+                      const IconComponent = getIncomeIcon(income.description);
+                      return (
+                        <div key={income.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center">
+                            <div className="p-2 bg-green-100 rounded-lg mr-4">
+                              <IconComponent className="h-5 w-5 text-green-600" />
                             </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{income.description}</h4>
+                              <p className="text-sm text-gray-500">
+                                {getFrequencyLabel(income.frequency)} 
+                                {income.incomeDate && ` • Le ${income.incomeDate} du mois`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span className="font-semibold text-green-600">{formatCurrency(Number(income.amount))}</span>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditIncome(income)}
+                                className="text-gray-400 hover:text-blue-600"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteIncomeMutation.mutate(income.id)}
+                                className="text-gray-400 hover:text-red-600"
+                                disabled={deleteIncomeMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
                     {incomes.length === 0 && (
@@ -1354,35 +1354,35 @@ export default function BudgetDashboard() {
                       </div>
                     )}
                   </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-              {/* Deductions Tab */}
-              <Tabs value="deductions">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Deduction Form */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{editingDeduction ? "Modifier le Prélèvement" : "Ajouter un Prélèvement"}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Form {...deductionForm}>
-                        <form onSubmit={deductionForm.handleSubmit(onDeductionSubmit)} className="space-y-4">
-                          <FormField
-                            control={deductionForm.control}
-                            name="description"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Ex: Loyer, Assurance..." {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+          {/* Deductions Tab */}
+          <TabsContent value="deductions">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Deduction Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingDeduction ? "Modifier le Prélèvement" : "Ajouter un Prélèvement"}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Form {...deductionForm}>
+                    <form onSubmit={deductionForm.handleSubmit(onDeductionSubmit)} className="space-y-4">
+                      <FormField
+                        control={deductionForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Loyer, Assurance..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={deductionForm.control}
@@ -1453,88 +1453,88 @@ export default function BudgetDashboard() {
                           </Button>
                         )}
                       </div>
-                      </form>
-                    </Form>
-                    </CardContent>
-                  </Card>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
 
-                  {/* Deduction List */}
-                  <Card className="lg:col-span-2">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle>Liste des Prélèvements</CardTitle>
-                        <div className="text-sm text-gray-500">
-                          Total: <span className="font-semibold text-red-600">{formatCurrency(totalDeductions)}</span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {deductions.map((deduction) => {
-                          const IconComponent = getCategoryIcon(deduction.category);
-                          return (
-                            <div key={deduction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                              <div className="flex items-center">
-                                <div className="p-2 bg-red-100 rounded-lg mr-4">
-                                  <IconComponent className="h-5 w-5 text-red-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{deduction.description}</h4>
-                                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                    <span>{getCategoryLabel(deduction.category)}</span>
-                                    <span>•</span>
-                                    <span>Prélevé le {deduction.deductionDate}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-4">
-                                <span className="font-semibold text-red-600">{formatCurrency(Number(deduction.amount))}</span>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditDeduction(deduction)}
-                                    className="text-gray-400 hover:text-blue-600"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteDeductionMutation.mutate(deduction.id)}
-                                    className="text-gray-400 hover:text-red-600"
-                                    disabled={deleteDeductionMutation.isPending}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+              {/* Deduction List */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Liste des Prélèvements</CardTitle>
+                    <div className="text-sm text-gray-500">
+                      Total: <span className="font-semibold text-red-600">{formatCurrency(totalDeductions)}</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {deductions.map((deduction) => {
+                      const IconComponent = getCategoryIcon(deduction.category);
+                      return (
+                        <div key={deduction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center">
+                            <div className="p-2 bg-red-100 rounded-lg mr-4">
+                              <IconComponent className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{deduction.description}</h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>{getCategoryLabel(deduction.category)}</span>
+                                <span>•</span>
+                                <span>Prélevé le {deduction.deductionDate}</span>
                               </div>
                             </div>
-                          );
-                        })}
-                        {deductions.length === 0 && (
-                          <div className="text-center py-8 text-gray-500">
-                            <Minus className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <p>Aucun prélèvement ajouté</p>
-                            <p className="text-sm">Ajoutez vos prélèvements récurrents pour un suivi automatique</p>
                           </div>
-                        )}
+                          <div className="flex items-center space-x-4">
+                            <span className="font-semibold text-red-600">{formatCurrency(Number(deduction.amount))}</span>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditDeduction(deduction)}
+                                className="text-gray-400 hover:text-blue-600"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteDeductionMutation.mutate(deduction.id)}
+                                className="text-gray-400 hover:text-red-600"
+                                disabled={deleteDeductionMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {deductions.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Minus className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p>Aucun prélèvement ajouté</p>
+                        <p className="text-sm">Ajoutez vos prélèvements récurrents pour un suivi automatique</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              </div>
+              </TabsContent>
 
-                  {/* Deductions Sub-Tab */}
-                  <TabsContent value="deductions">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Move the existing deductions content here */}
-                      <p>Contenu des prélèvements sera ajouté ici</p>
-                    </div>
-                  </TabsContent>
+              {/* Deductions Sub-Tab */}
+              <TabsContent value="deductions">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Move the existing deductions content here */}
+                  <p>Contenu des prélèvements sera ajouté ici</p>
                 </div>
-              </Tabs>
+              </TabsContent>
 
               {/* Accounts Sub-Tab */}
-              <Tabs value="accounts">
+              <TabsContent value="accounts">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Account Balance Form */}
                   <Card>
@@ -1629,10 +1629,10 @@ export default function BudgetDashboard() {
                     </CardContent>
                   </Card>
                 </div>
-              </Tabs>
+              </TabsContent>
 
               {/* Overdraft Sub-Tab */}
-              <Tabs value="overdraft">
+              <TabsContent value="overdraft">
                 <Card>
                   <CardHeader>
                     <CardTitle>Configuration du Découvert</CardTitle>
@@ -1677,7 +1677,7 @@ export default function BudgetDashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </Tabs>
+              </TabsContent>
             </Tabs>
           </TabsContent>
         </Tabs>

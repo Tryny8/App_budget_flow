@@ -1,5 +1,4 @@
 import { useState } from "react";
-const [activeSubTab, setActiveSubTab] = useState("income");
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -86,6 +85,7 @@ export default function BudgetDashboard() {
   const [projectionDates, setProjectionDates] = useState<number[]>([5, 10, 15, 20, 25]);
   const [overdraftEnabled, setOverdraftEnabled] = useState<boolean>(false);
   const [overdraftLimit, setOverdraftLimit] = useState<number>(0);
+  const [activeSubTab, setActiveSubTab] = useState("income"); // add var for sub-onglet
 
   // Queries
   const { data: incomes = [], isLoading: incomesLoading } = useQuery<Income[]>({

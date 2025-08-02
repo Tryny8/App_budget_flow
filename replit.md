@@ -8,6 +8,20 @@ This is a full-stack budget management application built with React, Express.js,
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Features Added
+
+### Monthly Tracking System (Added August 2024)
+- **Suivi Mensuel Tab**: Real-time view of processed vs pending transactions based on current date
+- **Date-Based Filtering**: Automatic categorization of income/deductions as "received" or "pending"
+- **Current Budget Calculation**: Shows actual available budget based on transactions processed so far
+
+### Projection System (Added August 2024)  
+- **Projection Tab**: Multi-date budget forecasting with interactive controls
+- **Customizable Projection Dates**: User can add/remove specific dates (2-5 dates) for detailed analysis
+- **Interactive Line Chart**: Visual representation of budget evolution throughout the month using Recharts
+- **Detailed Breakdown**: Date-by-date analysis showing cumulative incomes, deductions, and available budget
+- **Visual Status Indicators**: Clear distinction between past dates, current date, and future projections
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -18,6 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Form Handling**: React Hook Form with Zod validation
 - **Routing**: Wouter for lightweight client-side routing
 - **Component Structure**: Organized component library with reusable UI primitives
+- **Data Visualization**: Recharts library for budget projection charts and financial analytics
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript

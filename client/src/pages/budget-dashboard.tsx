@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wallet, Plus, Minus, PieChart, Edit, Trash2, Briefcase, Home, Car, Zap, Tv, Laptop } from "lucide-react";
+import { Wallet, Plus, Minus, PieChart, Edit, Trash2, Briefcase, Home, Car, Zap, Tv, Laptop, Calendar, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Income, type Deduction, insertIncomeSchema, insertDeductionSchema } from "@shared/schema";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const incomeFormSchema = insertIncomeSchema.extend({
   amount: z.string().min(1, "Le montant est requis").refine(
@@ -65,6 +66,7 @@ export default function BudgetDashboard() {
   const { toast } = useToast();
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [editingDeduction, setEditingDeduction] = useState<Deduction | null>(null);
+  const [projectionDates, setProjectionDates] = useState<number[]>([5, 10, 15, 20, 25]);
 
   // Queries
   const { data: incomes = [], isLoading: incomesLoading } = useQuery<Income[]>({
@@ -306,6 +308,57 @@ export default function BudgetDashboard() {
 
   const currentAvailableBudget = processedIncomesTotal - processedDeductionsTotal;
 
+  // Projection functions
+  const calculateBudgetAtDate = (targetDate: number) => {
+    const targetDay = Math.min(targetDate, getCurrentDayOfMonth());
+    const processedIncomesAtDate = incomes.filter(income => 
+      income.incomeDate && income.incomeDate <= targetDay
+    ).reduce((sum, income) => sum + Number(income.amount), 0);
+    
+    const processedDeductionsAtDate = deductions.filter(deduction => 
+      deduction.deductionDate <= targetDay
+    ).reduce((sum, deduction) => sum + Number(deduction.amount), 0);
+    
+    return processedIncomesAtDate - processedDeductionsAtDate;
+  };
+
+  const getProjectionData = () => {
+    const currentDay = getCurrentDayOfMonth();
+    const projectionData = projectionDates.map(date => {
+      const isPast = date <= currentDay;
+      const processedIncomes = incomes.filter(income => 
+        income.incomeDate && income.incomeDate <= date
+      ).reduce((sum, income) => sum + Number(income.amount), 0);
+      
+      const processedDeductions = deductions.filter(deduction => 
+        deduction.deductionDate <= date
+      ).reduce((sum, deduction) => sum + Number(deduction.amount), 0);
+      
+      const budget = processedIncomes - processedDeductions;
+      
+      return {
+        date,
+        budget,
+        incomes: processedIncomes,
+        deductions: processedDeductions,
+        isPast,
+        isToday: date === currentDay
+      };
+    });
+    
+    return projectionData.sort((a, b) => a.date - b.date);
+  };
+
+  const addProjectionDate = (newDate: number) => {
+    if (newDate >= 1 && newDate <= 31 && !projectionDates.includes(newDate)) {
+      setProjectionDates([...projectionDates, newDate].sort((a, b) => a - b));
+    }
+  };
+
+  const removeProjectionDate = (dateToRemove: number) => {
+    setProjectionDates(projectionDates.filter(date => date !== dateToRemove));
+  };
+
   if (incomesLoading || deductionsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
   }
@@ -330,14 +383,18 @@ export default function BudgetDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-5 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Tableau de bord
             </TabsTrigger>
             <TabsTrigger value="monthly" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
+              <Calendar className="h-4 w-4" />
               Suivi Mensuel
+            </TabsTrigger>
+            <TabsTrigger value="projection" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Projection
             </TabsTrigger>
             <TabsTrigger value="income" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -706,6 +763,206 @@ export default function BudgetDashboard() {
                         {formatCurrency(remainingBudget)}
                       </p>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Projection Tab */}
+          <TabsContent value="projection">
+            <div className="space-y-6">
+              {/* Projection Controls */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Dates de Projection</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="31"
+                        placeholder="Ex: 15"
+                        className="w-20"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = Number((e.target as HTMLInputElement).value);
+                            addProjectionDate(value);
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const input = document.querySelector('input[placeholder="Ex: 15"]') as HTMLInputElement;
+                          if (input?.value) {
+                            addProjectionDate(Number(input.value));
+                            input.value = '';
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {projectionDates.map(date => (
+                      <div key={date} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                        <span>Le {date}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-4 w-4 p-0 hover:bg-blue-200"
+                          onClick={() => removeProjectionDate(date)}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Projection Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Évolution du Budget Mensuel</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={getProjectionData()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <YAxis 
+                          tickFormatter={(value) => `${Math.round(value)}€`}
+                        />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [`${formatCurrency(value)}`, name === 'budget' ? 'Budget' : name]}
+                          labelFormatter={(label) => `Le ${label} du mois`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="budget" 
+                          stroke="#2563eb" 
+                          strokeWidth={3}
+                          dot={{ fill: '#2563eb', strokeWidth: 2, r: 6 }}
+                          activeDot={{ r: 8, stroke: '#2563eb', strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Detailed Projection Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Détail des Projections</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {getProjectionData().map((projection, index) => {
+                      const currentDay = getCurrentDayOfMonth();
+                      const isCurrentOrPast = projection.date <= currentDay;
+                      
+                      return (
+                        <div key={projection.date} className={`p-4 rounded-lg border-2 ${
+                          projection.isToday ? 'border-blue-500 bg-blue-50' :
+                          isCurrentOrPast ? 'border-gray-300 bg-gray-50' :
+                          'border-gray-200 bg-white'
+                        }`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                projection.isToday ? 'bg-blue-500 text-white' :
+                                isCurrentOrPast ? 'bg-gray-500 text-white' :
+                                'bg-blue-100 text-blue-600'
+                              }`}>
+                                {projection.date}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold">
+                                  Le {projection.date} du mois
+                                  {projection.isToday && ' (Aujourd\'hui)'}
+                                  {isCurrentOrPast && !projection.isToday && ' (Passé)'}
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                  {isCurrentOrPast ? 'Situation actuelle' : 'Projection'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className={`text-xl font-bold ${
+                              projection.budget >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {formatCurrency(projection.budget)}
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="text-center p-3 bg-green-50 rounded-lg">
+                              <p className="text-sm text-green-700 font-medium">Revenus cumulés</p>
+                              <p className="text-lg font-bold text-green-600">{formatCurrency(projection.incomes)}</p>
+                            </div>
+                            <div className="text-center p-3 bg-red-50 rounded-lg">
+                              <p className="text-sm text-red-700 font-medium">Prélèvements cumulés</p>
+                              <p className="text-lg font-bold text-red-600">{formatCurrency(projection.deductions)}</p>
+                            </div>
+                            <div className="text-center p-3 bg-blue-50 rounded-lg">
+                              <p className="text-sm text-blue-700 font-medium">Solde disponible</p>
+                              <p className={`text-lg font-bold ${
+                                projection.budget >= 0 ? 'text-blue-600' : 'text-red-600'
+                              }`}>
+                                {formatCurrency(projection.budget)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Transactions for this date */}
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Incomes on this date */}
+                              <div>
+                                <h5 className="font-medium text-green-600 mb-2">Revenus le {projection.date}</h5>
+                                <div className="space-y-1">
+                                  {incomes.filter(income => income.incomeDate === projection.date).map(income => (
+                                    <div key={income.id} className="flex justify-between text-sm">
+                                      <span>{income.description}</span>
+                                      <span className="text-green-600 font-medium">+{formatCurrency(Number(income.amount))}</span>
+                                    </div>
+                                  ))}
+                                  {incomes.filter(income => income.incomeDate === projection.date).length === 0 && (
+                                    <p className="text-sm text-gray-500">Aucun revenu</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Deductions on this date */}
+                              <div>
+                                <h5 className="font-medium text-red-600 mb-2">Prélèvements le {projection.date}</h5>
+                                <div className="space-y-1">
+                                  {deductions.filter(deduction => deduction.deductionDate === projection.date).map(deduction => (
+                                    <div key={deduction.id} className="flex justify-between text-sm">
+                                      <span>{deduction.description}</span>
+                                      <span className="text-red-600 font-medium">-{formatCurrency(Number(deduction.amount))}</span>
+                                    </div>
+                                  ))}
+                                  {deductions.filter(deduction => deduction.deductionDate === projection.date).length === 0 && (
+                                    <p className="text-sm text-gray-500">Aucun prélèvement</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

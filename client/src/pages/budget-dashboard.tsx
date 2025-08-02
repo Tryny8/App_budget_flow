@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { type Income, type Deduction, insertIncomeSchema, insertDeductionSchema } from "@shared/schema";
+import { type Income, type Deduction, type AccountBalance, insertIncomeSchema, insertDeductionSchema, insertAccountBalanceSchema } from "@shared/schema";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const incomeFormSchema = insertIncomeSchema.extend({
@@ -44,8 +44,23 @@ const deductionFormSchema = insertDeductionSchema.extend({
   ),
 });
 
+const accountBalanceFormSchema = insertAccountBalanceSchema.extend({
+  amount: z.string().min(1, "Le montant est requis").refine(
+    (val) => !isNaN(Number(val)) && Number(val) >= 0,
+    "Le montant doit être un nombre positif ou zéro"
+  ),
+  balanceDate: z.string().min(1, "La date est requise").refine(
+    (val) => {
+      const num = Number(val);
+      return !isNaN(num) && num >= 1 && num <= 31;
+    },
+    "La date doit être entre 1 et 31"
+  ),
+});
+
 type IncomeFormData = z.infer<typeof incomeFormSchema>;
 type DeductionFormData = z.infer<typeof deductionFormSchema>;
+type AccountBalanceFormData = z.infer<typeof accountBalanceFormSchema>;
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
@@ -80,6 +95,10 @@ export default function BudgetDashboard() {
     queryKey: ["/api/deductions"],
   });
 
+  const { data: accountBalances = [], isLoading: accountBalancesLoading } = useQuery<AccountBalance[]>({
+    queryKey: ["/api/account-balances"],
+  });
+
   // Calculate totals
   const totalIncome = incomes.reduce((sum, income) => sum + Number(income.amount), 0);
   const totalDeductions = deductions.reduce((sum, deduction) => sum + Number(deduction.amount), 0);
@@ -105,6 +124,15 @@ export default function BudgetDashboard() {
       amount: "",
       category: "housing",
       deductionDate: "",
+    },
+  });
+
+  // Account balance form
+  const accountBalanceForm = useForm<AccountBalanceFormData>({
+    resolver: zodResolver(accountBalanceFormSchema),
+    defaultValues: {
+      amount: "",
+      balanceDate: "",
     },
   });
 
@@ -201,6 +229,33 @@ export default function BudgetDashboard() {
     },
   });
 
+  // Account balance mutations
+  const createAccountBalanceMutation = useMutation({
+    mutationFn: async (data: AccountBalanceFormData) => {
+      const payload = { ...data, amount: data.amount, balanceDate: Number(data.balanceDate) };
+      return apiRequest("POST", "/api/account-balances", payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account-balances"] });
+      accountBalanceForm.reset();
+      toast({ title: "Solde de compte ajouté avec succès" });
+    },
+    onError: () => {
+      toast({ title: "Erreur lors de l'ajout du solde", variant: "destructive" });
+    },
+  });
+
+  const deleteAccountBalanceMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/account-balances/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/account-balances"] });
+      toast({ title: "Solde supprimé avec succès" });
+    },
+    onError: () => {
+      toast({ title: "Erreur lors de la suppression", variant: "destructive" });
+    },
+  });
+
   // Form handlers
   const onIncomeSubmit = (data: IncomeFormData) => {
     if (editingIncome) {
@@ -216,6 +271,10 @@ export default function BudgetDashboard() {
     } else {
       createDeductionMutation.mutate(data);
     }
+  };
+
+  const onAccountBalanceSubmit = (data: AccountBalanceFormData) => {
+    createAccountBalanceMutation.mutate(data);
   };
 
   const handleEditIncome = (income: Income) => {
@@ -340,7 +399,11 @@ export default function BudgetDashboard() {
 
   const getProjectionData = () => {
     const currentDay = getCurrentDayOfMonth();
-    const projectionData = projectionDates.map(date => {
+    
+    // Combine projection dates with account balance dates
+    const allDates = [...new Set([...projectionDates, ...accountBalances.map(b => b.balanceDate)])];
+    
+    const projectionData = allDates.map(date => {
       const isPast = date <= currentDay;
       const processedIncomes = incomes.filter(income => 
         income.incomeDate && income.incomeDate <= date
@@ -350,15 +413,24 @@ export default function BudgetDashboard() {
         deduction.deductionDate <= date
       ).reduce((sum, deduction) => sum + Number(deduction.amount), 0);
       
-      const budget = processedIncomes - processedDeductions;
+      // Find account balance for this specific date (most recent entry for this date)
+      const accountBalance = accountBalances
+        .filter(balance => balance.balanceDate === date)
+        .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0];
+      
+      const budget = processedIncomes - processedDeductions; // Solde des revenus
+      const accountBudget = accountBalance ? Number(accountBalance.amount) - processedDeductions : null; // Solde du compte
       
       return {
         date,
-        budget,
-        incomes: processedIncomes,
-        deductions: processedDeductions,
+        budget, // Solde des revenus (revenus cumulés - prélèvements)
+        incomes: processedIncomes, // Revenus cumulés
+        deductions: processedDeductions, // Prélèvements cumulés
+        accountBalance: accountBalance ? Number(accountBalance.amount) : null, // Restant sur compte
+        accountBudget, // Solde du compte (restant sur compte - prélèvements)
         isPast,
-        isToday: date === currentDay
+        isToday: date === currentDay,
+        hasAccountData: !!accountBalance
       };
     });
     
@@ -375,7 +447,7 @@ export default function BudgetDashboard() {
     setProjectionDates(projectionDates.filter(date => date !== dateToRemove));
   };
 
-  if (incomesLoading || deductionsLoading) {
+  if (incomesLoading || deductionsLoading || accountBalancesLoading) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
   }
 
@@ -897,9 +969,11 @@ export default function BudgetDashboard() {
                         <Tooltip 
                           formatter={(value: number, name: string) => {
                             const labels = {
-                              budget: 'Budget disponible',
+                              budget: 'Solde des revenus',
                               incomes: 'Revenus cumulés',
-                              deductions: 'Prélèvements cumulés'
+                              deductions: 'Prélèvements cumulés',
+                              accountBalance: 'Restant sur compte',
+                              accountBudget: 'Solde du compte'
                             };
                             return [`${formatCurrency(value)}`, labels[name as keyof typeof labels] || name];
                           }}
@@ -916,6 +990,16 @@ export default function BudgetDashboard() {
                         />
                         <Line 
                           type="monotone" 
+                          dataKey="accountBalance" 
+                          stroke="#059669" 
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ fill: '#059669', strokeWidth: 1, r: 4 }}
+                          connectNulls={false}
+                          name="Restant sur compte"
+                        />
+                        <Line 
+                          type="monotone" 
                           dataKey="deductions" 
                           stroke="#dc2626" 
                           strokeWidth={2}
@@ -929,7 +1013,18 @@ export default function BudgetDashboard() {
                           strokeWidth={3}
                           dot={{ fill: '#2563eb', strokeWidth: 2, r: 6 }}
                           activeDot={{ r: 8, stroke: '#2563eb', strokeWidth: 2 }}
-                          name="Budget disponible"
+                          name="Solde des revenus"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="accountBudget" 
+                          stroke="#1d4ed8" 
+                          strokeWidth={3}
+                          strokeDasharray="5 5"
+                          dot={{ fill: '#1d4ed8', strokeWidth: 2, r: 6 }}
+                          activeDot={{ r: 8, stroke: '#1d4ed8', strokeWidth: 2 }}
+                          connectNulls={false}
+                          name="Solde du compte"
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -981,7 +1076,7 @@ export default function BudgetDashboard() {
                             </div>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div className="text-center p-3 bg-green-50 rounded-lg">
                               <p className="text-sm text-green-700 font-medium">Revenus cumulés</p>
                               <p className="text-lg font-bold text-green-600">{formatCurrency(projection.incomes)}</p>
@@ -991,18 +1086,36 @@ export default function BudgetDashboard() {
                               <p className="text-lg font-bold text-red-600">{formatCurrency(projection.deductions)}</p>
                             </div>
                             <div className="text-center p-3 bg-blue-50 rounded-lg">
-                              <p className="text-sm text-blue-700 font-medium">Solde disponible</p>
+                              <p className="text-sm text-blue-700 font-medium">Solde des revenus</p>
                               <p className={`text-lg font-bold ${
                                 projection.budget >= 0 ? 'text-blue-600' : 'text-red-600'
                               }`}>
                                 {formatCurrency(projection.budget)}
                               </p>
                             </div>
+                            {projection.hasAccountData && (
+                              <>
+                                <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                                  <p className="text-sm text-emerald-700 font-medium">Restant sur compte</p>
+                                  <p className="text-lg font-bold text-emerald-600">
+                                    {formatCurrency(projection.accountBalance!)}
+                                  </p>
+                                </div>
+                                <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                                  <p className="text-sm text-indigo-700 font-medium">Solde du compte</p>
+                                  <p className={`text-lg font-bold ${
+                                    projection.accountBudget! >= 0 ? 'text-indigo-600' : 'text-red-600'
+                                  }`}>
+                                    {formatCurrency(projection.accountBudget!)}
+                                  </p>
+                                </div>
+                              </>
+                            )}
                           </div>
 
                           {/* Transactions for this date */}
                           <div className="mt-4 pt-4 border-t border-gray-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               {/* Incomes on this date */}
                               <div>
                                 <h5 className="font-medium text-green-600 mb-2">Revenus le {projection.date}</h5>
@@ -1034,6 +1147,22 @@ export default function BudgetDashboard() {
                                   )}
                                 </div>
                               </div>
+
+                              {/* Account balance on this date */}
+                              <div>
+                                <h5 className="font-medium text-blue-600 mb-2">Solde de compte le {projection.date}</h5>
+                                <div className="space-y-1">
+                                  {accountBalances.filter(balance => balance.balanceDate === projection.date).map(balance => (
+                                    <div key={balance.id} className="flex justify-between text-sm">
+                                      <span>Solde saisi</span>
+                                      <span className="text-blue-600 font-medium">{formatCurrency(Number(balance.amount))}</span>
+                                    </div>
+                                  ))}
+                                  {accountBalances.filter(balance => balance.balanceDate === projection.date).length === 0 && (
+                                    <p className="text-sm text-gray-500">Aucun solde saisi</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1048,7 +1177,7 @@ export default function BudgetDashboard() {
           {/* Settings Tab */}
           <TabsContent value="settings">
             <Tabs defaultValue="income" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="income" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Revenus
@@ -1056,6 +1185,10 @@ export default function BudgetDashboard() {
                 <TabsTrigger value="deductions" className="flex items-center gap-2">
                   <Minus className="h-4 w-4" />
                   Prélèvements
+                </TabsTrigger>
+                <TabsTrigger value="accounts" className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Comptes
                 </TabsTrigger>
                 <TabsTrigger value="overdraft" className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -1396,6 +1529,104 @@ export default function BudgetDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Move the existing deductions content here */}
                   <p>Contenu des prélèvements sera ajouté ici</p>
+                </div>
+              </TabsContent>
+
+              {/* Accounts Sub-Tab */}
+              <TabsContent value="accounts">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Account Balance Form */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Saisir Solde de Compte</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Form {...accountBalanceForm}>
+                        <form onSubmit={accountBalanceForm.handleSubmit(onAccountBalanceSubmit)} className="space-y-4">
+                          <FormField
+                            control={accountBalanceForm.control}
+                            name="amount"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Montant restant sur le compte (€)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={accountBalanceForm.control}
+                            name="balanceDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Jour du mois (1-31)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="1" max="31" placeholder="Ex: 15" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <Button 
+                            type="submit" 
+                            className="w-full"
+                            disabled={createAccountBalanceMutation.isPending}
+                          >
+                            {createAccountBalanceMutation.isPending ? "Ajout..." : "Ajouter le solde"}
+                          </Button>
+                        </form>
+                      </Form>
+                    </CardContent>
+                  </Card>
+
+                  {/* Account Balances List */}
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle>Historique des Soldes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {accountBalances.map((balance) => (
+                          <div key={balance.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center">
+                              <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                                <Wallet className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">Solde du {balance.balanceDate} du mois</p>
+                                <p className="text-sm text-gray-500">
+                                  Saisi le {balance.createdAt ? new Date(balance.createdAt).toLocaleDateString('fr-FR') : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-blue-600 text-lg">{formatCurrency(Number(balance.amount))}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteAccountBalanceMutation.mutate(balance.id)}
+                                className="text-gray-400 hover:text-red-600"
+                                disabled={deleteAccountBalanceMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {accountBalances.length === 0 && (
+                          <div className="text-center py-8 text-gray-500">
+                            <Wallet className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <p>Aucun solde de compte saisi</p>
+                            <p className="text-sm">Saisissez vos soldes pour suivre l'évolution de votre compte</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 

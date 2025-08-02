@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Income, type InsertIncome, type Deduction, type InsertDeduction } from "@shared/schema";
+import { type User, type InsertUser, type Income, type InsertIncome, type Deduction, type InsertDeduction, type AccountBalance, type InsertAccountBalance } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -17,17 +17,25 @@ export interface IStorage {
   createDeduction(deduction: InsertDeduction): Promise<Deduction>;
   updateDeduction(id: string, deduction: Partial<InsertDeduction>): Promise<Deduction | undefined>;
   deleteDeduction(id: string): Promise<boolean>;
+  
+  // Account balance operations
+  getAccountBalances(userId?: string): Promise<AccountBalance[]>;
+  createAccountBalance(balance: InsertAccountBalance): Promise<AccountBalance>;
+  updateAccountBalance(id: string, balance: Partial<InsertAccountBalance>): Promise<AccountBalance | undefined>;
+  deleteAccountBalance(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private incomes: Map<string, Income>;
   private deductions: Map<string, Deduction>;
+  private accountBalances: Map<string, AccountBalance>;
 
   constructor() {
     this.users = new Map();
     this.incomes = new Map();
     this.deductions = new Map();
+    this.accountBalances = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -105,6 +113,41 @@ export class MemStorage implements IStorage {
 
   async deleteDeduction(id: string): Promise<boolean> {
     return this.deductions.delete(id);
+  }
+
+  // Account balance operations
+  async getAccountBalances(userId?: string): Promise<AccountBalance[]> {
+    const allBalances = Array.from(this.accountBalances.values());
+    if (userId) {
+      return allBalances.filter(balance => balance.userId === userId);
+    }
+    return allBalances.sort((a, b) => a.balanceDate - b.balanceDate);
+  }
+
+  async createAccountBalance(insertBalance: InsertAccountBalance): Promise<AccountBalance> {
+    const id = randomUUID();
+    const balance: AccountBalance = { 
+      ...insertBalance, 
+      id, 
+      userId: null,
+      createdAt: new Date()
+    };
+    this.accountBalances.set(id, balance);
+    return balance;
+  }
+
+  async updateAccountBalance(id: string, updateData: Partial<InsertAccountBalance>): Promise<AccountBalance | undefined> {
+    const existingBalance = this.accountBalances.get(id);
+    if (!existingBalance) {
+      return undefined;
+    }
+    const updatedBalance = { ...existingBalance, ...updateData };
+    this.accountBalances.set(id, updatedBalance);
+    return updatedBalance;
+  }
+
+  async deleteAccountBalance(id: string): Promise<boolean> {
+    return this.accountBalances.delete(id);
   }
 }
 

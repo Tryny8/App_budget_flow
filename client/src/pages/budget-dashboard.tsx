@@ -1,4 +1,5 @@
 import { useState } from "react";
+const [activeSubTab, setActiveSubTab] = useState("income");
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1176,7 +1177,7 @@ export default function BudgetDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Tabs defaultValue="income" className="w-full">
+            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="income" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />

@@ -6,6 +6,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BudgetDashboard from "@/pages/budget-dashboard";
 import NotFound from "@/pages/not-found";
+import { useLocation } from "wouter";
+const [location] = useLocation();
+console.log("Current location:", location);
 
 function Router() {
   return (

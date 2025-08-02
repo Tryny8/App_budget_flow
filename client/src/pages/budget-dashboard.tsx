@@ -85,6 +85,7 @@ export default function BudgetDashboard() {
   const [projectionDates, setProjectionDates] = useState<number[]>([5, 10, 15, 20, 25]);
   const [overdraftEnabled, setOverdraftEnabled] = useState<boolean>(false);
   const [overdraftLimit, setOverdraftLimit] = useState<number>(0);
+  const [settingsTab, setSettingsTab] = useState("income");
 
   // Queries
   const { data: incomes = [], isLoading: incomesLoading } = useQuery<Income[]>({
@@ -1176,7 +1177,7 @@ export default function BudgetDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Tabs defaultValue="income" className="w-full">
+            <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="income" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -1197,7 +1198,7 @@ export default function BudgetDashboard() {
               </TabsList>
 
               {/* Income Sub-Tab */}
-              <TabsContent value="income">
+              <Tabs value="income">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Income Form */}
                   <Card>
@@ -1356,10 +1357,10 @@ export default function BudgetDashboard() {
                     </CardContent>
                   </Card>
                 </div>
-              </TabsContent>
+              </Tabs>
 
               {/* Deductions Tab */}
-              <TabsContent value="deductions">
+              <Tabs value="deductions">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Deduction Form */}
                   <Card>
@@ -1521,19 +1522,19 @@ export default function BudgetDashboard() {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              </TabsContent>
 
-              {/* Deductions Sub-Tab */}
-              <TabsContent value="deductions">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Move the existing deductions content here */}
-                  <p>Contenu des prélèvements sera ajouté ici</p>
+                  {/* Deductions Sub-Tab */}
+                  <TabsContent value="deductions">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      {/* Move the existing deductions content here */}
+                      <p>Contenu des prélèvements sera ajouté ici</p>
+                    </div>
+                  </TabsContent>
                 </div>
-              </TabsContent>
+              </Tabs>
 
               {/* Accounts Sub-Tab */}
-              <TabsContent value="accounts">
+              <Tabs value="accounts">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Account Balance Form */}
                   <Card>
@@ -1628,10 +1629,10 @@ export default function BudgetDashboard() {
                     </CardContent>
                   </Card>
                 </div>
-              </TabsContent>
+              </Tabs>
 
               {/* Overdraft Sub-Tab */}
-              <TabsContent value="overdraft">
+              <Tabs value="overdraft">
                 <Card>
                   <CardHeader>
                     <CardTitle>Configuration du Découvert</CardTitle>
@@ -1676,7 +1677,7 @@ export default function BudgetDashboard() {
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </Tabs>
             </Tabs>
           </TabsContent>
         </Tabs>

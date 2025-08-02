@@ -85,7 +85,6 @@ export default function BudgetDashboard() {
   const [projectionDates, setProjectionDates] = useState<number[]>([5, 10, 15, 20, 25]);
   const [overdraftEnabled, setOverdraftEnabled] = useState<boolean>(false);
   const [overdraftLimit, setOverdraftLimit] = useState<number>(0);
-  const [activeSubTab, setActiveSubTab] = useState("income"); // add var for sub-onglet
 
   // Queries
   const { data: incomes = [], isLoading: incomesLoading } = useQuery<Income[]>({
@@ -1177,7 +1176,7 @@ export default function BudgetDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+            <Tabs defaultValue="income" className="w-full">
               <TabsList className="grid w-full grid-cols-4 mb-6">
                 <TabsTrigger value="income" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -1358,7 +1357,7 @@ export default function BudgetDashboard() {
                   </Card>
                 </div>
               </TabsContent>
-              
+
               {/* Deductions Tab */}
               <TabsContent value="deductions">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

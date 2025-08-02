@@ -1,0 +1,664 @@
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Budget</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#10B981',
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <!-- @COMPONENT: AppHeader -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-wallet text-primary text-2xl mr-3"></i>
+                    <h1 class="text-xl font-semibold text-gray-900">Gestionnaire de Budget</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500" data-bind="currentDate">Décembre 2024</span>
+                    <button class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: AppHeader -->
+
+    <!-- @COMPONENT: MainContainer -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- @COMPONENT: TabNavigation -->
+        <nav class="flex space-x-8 mb-8" data-implementation="Implement active tab state management">
+            <button data-tab="dashboard" class="tab-button active px-3 py-2 text-sm font-medium rounded-md text-primary bg-blue-50 border border-blue-200">
+                <i class="fas fa-chart-pie mr-2"></i>
+                Tableau de bord
+            </button>
+            <button data-tab="income" class="tab-button px-3 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-arrow-up mr-2"></i>
+                Revenus
+            </button>
+            <button data-tab="deductions" class="tab-button px-3 py-2 text-sm font-medium rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-arrow-down mr-2"></i>
+                Prélèvements
+            </button>
+        </nav>
+        <!-- @END_COMPONENT: TabNavigation -->
+
+        <!-- @COMPONENT: DashboardTab -->
+        <div id="dashboard-tab" class="tab-content">
+            <!-- @COMPONENT: FinancialSummaryCards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Revenue Card -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Revenus Totaux</h3>
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <i class="fas fa-plus text-green-600"></i>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-green-600" data-bind="totalIncome" data-mock="true">3,250.00 €</div>
+                    <p class="text-sm text-gray-500 mt-2">Ce mois</p>
+                </div>
+
+                <!-- Deductions Card -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Prélèvements Totaux</h3>
+                        <div class="p-2 bg-red-100 rounded-lg">
+                            <i class="fas fa-minus text-red-600"></i>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-red-600" data-bind="totalDeductions" data-mock="true">1,847.50 €</div>
+                    <p class="text-sm text-gray-500 mt-2">Ce mois</p>
+                </div>
+
+                <!-- Remaining Budget Card -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Budget Restant</h3>
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <i class="fas fa-wallet text-blue-600"></i>
+                        </div>
+                    </div>
+                    <div class="text-3xl font-bold text-blue-600" data-bind="remainingBudget" data-mock="true">1,402.50 €</div>
+                    <p class="text-sm text-gray-500 mt-2">Disponible</p>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: FinancialSummaryCards -->
+
+            <!-- @COMPONENT: BudgetBreakdownChart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-6">Répartition du Budget</h3>
+                
+                <!-- Budget Breakdown Visual -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                            <span class="text-sm font-medium text-gray-700">Revenus</span>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-900" data-mock="true">3,250.00 €</span>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-green-500 h-3 rounded-full" style="width: 100%"></div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-red-500 rounded mr-3"></div>
+                            <span class="text-sm font-medium text-gray-700">Prélèvements</span>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-900" data-mock="true">1,847.50 €</span>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-red-500 h-3 rounded-full" style="width: 57%"></div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+                            <span class="text-sm font-medium text-gray-700">Restant</span>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-900" data-mock="true">1,402.50 €</span>
+                    </div>
+                    
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-blue-500 h-3 rounded-full" style="width: 43%"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: BudgetBreakdownChart -->
+
+            <!-- @COMPONENT: RecentTransactions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Dernières Transactions</h3>
+                    <button class="text-sm text-primary hover:text-blue-700 font-medium">
+                        Voir tout
+                    </button>
+                </div>
+                
+                <div class="space-y-4" data-mock="true">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-green-100 rounded-lg mr-3">
+                                <i class="fas fa-briefcase text-green-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Salaire</p>
+                                <p class="text-sm text-gray-500">Revenu mensuel</p>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-green-600">+2,800.00 €</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-red-100 rounded-lg mr-3">
+                                <i class="fas fa-home text-red-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Loyer</p>
+                                <p class="text-sm text-gray-500">Prélèvement automatique</p>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-red-600">-850.00 €</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-red-100 rounded-lg mr-3">
+                                <i class="fas fa-car text-red-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Assurance Auto</p>
+                                <p class="text-sm text-gray-500">Prélèvement mensuel</p>
+                            </div>
+                        </div>
+                        <span class="font-semibold text-red-600">-127.50 €</span>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: RecentTransactions -->
+        </div>
+        <!-- @END_COMPONENT: DashboardTab -->
+
+        <!-- @COMPONENT: IncomeTab -->
+        <div id="income-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- @COMPONENT: IncomeForm -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-6">Ajouter un Revenu</h3>
+                        
+                        <form data-implementation="Handle form submission and validation">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="income-description" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Description
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="income-description" 
+                                        name="description"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Ex: Salaire, Freelance..."
+                                        data-mock="true"
+                                    >
+                                </div>
+                                
+                                <div>
+                                    <label for="income-amount" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Montant (€)
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="income-amount" 
+                                        name="amount"
+                                        step="0.01"
+                                        min="0"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="0.00"
+                                        data-mock="true"
+                                    >
+                                </div>
+                                
+                                <div>
+                                    <label for="income-frequency" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Fréquence
+                                    </label>
+                                    <select 
+                                        id="income-frequency" 
+                                        name="frequency"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        data-mock="true"
+                                    >
+                                        <option value="monthly">Mensuel</option>
+                                        <option value="weekly">Hebdomadaire</option>
+                                        <option value="yearly">Annuel</option>
+                                    </select>
+                                </div>
+                                
+                                <button 
+                                    type="submit" 
+                                    class="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 font-medium"
+                                    data-event="click:handleAddIncome"
+                                >
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: IncomeForm -->
+
+                <!-- @COMPONENT: IncomeList -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-medium text-gray-900">Liste des Revenus</h3>
+                            <div class="text-sm text-gray-500">
+                                Total: <span class="font-semibold text-green-600" data-bind="totalIncome" data-mock="true">3,250.00 €</span>
+                            </div>
+                        </div>
+                        
+                        <!-- @MAP: incomes.map(income => ( -->
+                        <div class="space-y-3" data-mock="true">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-green-100 rounded-lg mr-4">
+                                        <i class="fas fa-briefcase text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Salaire Principal</h4>
+                                        <p class="text-sm text-gray-500">Mensuel</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-green-600">2,800.00 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editIncome">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteIncome">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-green-100 rounded-lg mr-4">
+                                        <i class="fas fa-laptop text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Freelance Web</h4>
+                                        <p class="text-sm text-gray-500">Mensuel</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-green-600">450.00 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editIncome">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteIncome">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                                <p>Ajoutez vos sources de revenus pour calculer votre budget</p>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: IncomeList -->
+            </div>
+        </div>
+        <!-- @END_COMPONENT: IncomeTab -->
+
+        <!-- @COMPONENT: DeductionsTab -->
+        <div id="deductions-tab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- @COMPONENT: DeductionForm -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-6">Ajouter un Prélèvement</h3>
+                        
+                        <form data-implementation="Handle form submission and validation">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="deduction-description" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Description
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="deduction-description" 
+                                        name="description"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Ex: Loyer, Assurance..."
+                                        data-mock="true"
+                                    >
+                                </div>
+                                
+                                <div>
+                                    <label for="deduction-amount" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Montant (€)
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="deduction-amount" 
+                                        name="amount"
+                                        step="0.01"
+                                        min="0"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="0.00"
+                                        data-mock="true"
+                                    >
+                                </div>
+                                
+                                <div>
+                                    <label for="deduction-category" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Catégorie
+                                    </label>
+                                    <select 
+                                        id="deduction-category" 
+                                        name="category"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        data-mock="true"
+                                    >
+                                        <option value="housing">Logement</option>
+                                        <option value="transport">Transport</option>
+                                        <option value="insurance">Assurance</option>
+                                        <option value="utilities">Services Publics</option>
+                                        <option value="subscription">Abonnements</option>
+                                        <option value="other">Autre</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="deduction-date" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Date de Prélèvement
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="deduction-date" 
+                                        name="date"
+                                        min="1"
+                                        max="31"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Jour du mois (1-31)"
+                                        data-mock="true"
+                                    >
+                                </div>
+                                
+                                <button 
+                                    type="submit" 
+                                    class="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 font-medium"
+                                    data-event="click:handleAddDeduction"
+                                >
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Ajouter
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DeductionForm -->
+
+                <!-- @COMPONENT: DeductionList -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-medium text-gray-900">Liste des Prélèvements</h3>
+                            <div class="text-sm text-gray-500">
+                                Total: <span class="font-semibold text-red-600" data-bind="totalDeductions" data-mock="true">1,847.50 €</span>
+                            </div>
+                        </div>
+                        
+                        <!-- @MAP: deductions.map(deduction => ( -->
+                        <div class="space-y-3" data-mock="true">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-red-100 rounded-lg mr-4">
+                                        <i class="fas fa-home text-red-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Loyer</h4>
+                                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                            <span>Logement</span>
+                                            <span>•</span>
+                                            <span>Prélevé le 1er</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-red-600">850.00 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editDeduction">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteDeduction">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-red-100 rounded-lg mr-4">
+                                        <i class="fas fa-car text-red-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Assurance Auto</h4>
+                                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                            <span>Assurance</span>
+                                            <span>•</span>
+                                            <span>Prélevé le 15</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-red-600">127.50 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editDeduction">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteDeduction">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-red-100 rounded-lg mr-4">
+                                        <i class="fas fa-bolt text-red-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Électricité</h4>
+                                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                            <span>Services Publics</span>
+                                            <span>•</span>
+                                            <span>Prélevé le 10</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-red-600">95.00 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editDeduction">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteDeduction">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <div class="p-2 bg-red-100 rounded-lg mr-4">
+                                        <i class="fas fa-tv text-red-600"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Netflix + Spotify</h4>
+                                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                            <span>Abonnements</span>
+                                            <span>•</span>
+                                            <span>Prélevé le 20</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-semibold text-red-600">25.00 €</span>
+                                    <div class="flex space-x-2">
+                                        <button class="text-gray-400 hover:text-blue-600" data-event="click:editDeduction">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" data-event="click:deleteDeduction">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-minus-circle text-2xl mb-2"></i>
+                                <p>Ajoutez vos prélèvements récurrents pour un suivi automatique</p>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DeductionList -->
+            </div>
+        </div>
+        <!-- @END_COMPONENT: DeductionsTab -->
+
+    </div>
+    <!-- @END_COMPONENT: MainContainer -->
+
+    <!-- @STATE: activeTab:string = 'dashboard' -->
+    <!-- @STATE: incomes:array = [] -->
+    <!-- @STATE: deductions:array = [] -->
+    <!-- @STATE: totalIncome:number = 0 -->
+    <!-- @STATE: totalDeductions:number = 0 -->
+    <!-- @STATE: remainingBudget:number = 0 -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        (function() {
+            // Tab Navigation
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            function switchTab(targetTab) {
+                // Remove active class from all buttons
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active', 'text-primary', 'bg-blue-50', 'border', 'border-blue-200');
+                    btn.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+                });
+                
+                // Hide all tab contents
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Activate target tab button
+                const targetButton = document.querySelector(`[data-tab="${targetTab}"]`);
+                if (targetButton) {
+                    targetButton.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+                    targetButton.classList.add('active', 'text-primary', 'bg-blue-50', 'border', 'border-blue-200');
+                }
+                
+                // Show target tab content
+                const targetContent = document.getElementById(`${targetTab}-tab`);
+                if (targetContent) {
+                    targetContent.classList.remove('hidden');
+                }
+            }
+            
+            // Add click event listeners to tab buttons
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetTab = button.getAttribute('data-tab');
+                    switchTab(targetTab);
+                });
+            });
+            
+            // Initialize with dashboard tab
+            switchTab('dashboard');
+            
+            // Form validation helper
+            function validateNumber(input) {
+                const value = parseFloat(input.value);
+                if (isNaN(value) || value < 0) {
+                    input.classList.add('border-red-500');
+                    return false;
+                } else {
+                    input.classList.remove('border-red-500');
+                    return true;
+                }
+            }
+            
+            // Add number input validation
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                input.addEventListener('blur', () => validateNumber(input));
+            });
+            
+            // Auto-calculate remaining budget
+            function calculateRemainingBudget() {
+                // TODO: Implement actual calculation logic
+                const totalIncome = 3250.00;
+                const totalDeductions = 1847.50;
+                const remaining = totalIncome - totalDeductions;
+                
+                console.log(`Budget calculation: ${totalIncome} - ${totalDeductions} = ${remaining}`);
+                return remaining;
+            }
+            
+            // Initialize calculations
+            calculateRemainingBudget();
+        })();
+    </script>
+</body>
+</html>

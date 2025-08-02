@@ -3,12 +3,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wallet, Plus, Minus, PieChart, Edit, Trash2, Briefcase, Home, Car, Zap, Tv, Laptop, Calendar, TrendingUp } from "lucide-react";
+import { Wallet, Plus, Minus, PieChart, Edit, Trash2, Briefcase, Home, Car, Zap, Tv, Laptop, Calendar, TrendingUp, Settings, CreditCard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -67,6 +68,8 @@ export default function BudgetDashboard() {
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [editingDeduction, setEditingDeduction] = useState<Deduction | null>(null);
   const [projectionDates, setProjectionDates] = useState<number[]>([5, 10, 15, 20, 25]);
+  const [overdraftEnabled, setOverdraftEnabled] = useState<boolean>(false);
+  const [overdraftLimit, setOverdraftLimit] = useState<number>(0);
 
   // Queries
   const { data: incomes = [], isLoading: incomesLoading } = useQuery<Income[]>({
@@ -81,6 +84,7 @@ export default function BudgetDashboard() {
   const totalIncome = incomes.reduce((sum, income) => sum + Number(income.amount), 0);
   const totalDeductions = deductions.reduce((sum, deduction) => sum + Number(deduction.amount), 0);
   const remainingBudget = totalIncome - totalDeductions;
+
 
   // Income form
   const incomeForm = useForm<IncomeFormData>({
@@ -306,7 +310,14 @@ export default function BudgetDashboard() {
   const processedDeductionsTotal = getProcessedDeductions().reduce((sum, deduction) => sum + Number(deduction.amount), 0);
   const pendingDeductionsTotal = getPendingDeductions().reduce((sum, deduction) => sum + Number(deduction.amount), 0);
 
-  const currentAvailableBudget = processedIncomesTotal - processedDeductionsTotal;
+  const rawBudget = processedIncomesTotal - processedDeductionsTotal;
+  
+  // Overdraft logic
+  const currentAvailableBudget = overdraftEnabled ? Math.max(0, rawBudget) : rawBudget;
+  const usedOverdraft = overdraftEnabled && rawBudget < 0 ? Math.abs(rawBudget) : 0;
+  const remainingOverdraft = overdraftEnabled ? Math.max(0, overdraftLimit - usedOverdraft) : 0;
+
+
 
   // Projection functions
   const calculateBudgetAtDate = (targetDate: number) => {
@@ -383,7 +394,7 @@ export default function BudgetDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Tableau de bord
@@ -396,20 +407,16 @@ export default function BudgetDashboard() {
               <TrendingUp className="h-4 w-4" />
               Projection
             </TabsTrigger>
-            <TabsTrigger value="income" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Revenus
-            </TabsTrigger>
-            <TabsTrigger value="deductions" className="flex items-center gap-2">
-              <Minus className="h-4 w-4" />
-              Prélèvements
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Paramètres
             </TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-${overdraftEnabled ? '4' : '3'} gap-6 mb-8`}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Revenus Totaux</CardTitle>
@@ -444,12 +451,31 @@ export default function BudgetDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                    {formatCurrency(remainingBudget)}
+                  <div className={`text-2xl font-bold ${overdraftEnabled ? 'text-blue-600' : (remainingBudget >= 0 ? 'text-blue-600' : 'text-red-600')}`}>
+                    {overdraftEnabled ? formatCurrency(Math.max(0, remainingBudget)) : formatCurrency(remainingBudget)}
                   </div>
                   <p className="text-xs text-muted-foreground">Disponible</p>
                 </CardContent>
               </Card>
+
+              {overdraftEnabled && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Découvert Restant</CardTitle>
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <CreditCard className="h-4 w-4 text-orange-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {formatCurrency(remainingOverdraft)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      sur {formatCurrency(overdraftLimit)}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Budget Breakdown */}
@@ -488,14 +514,34 @@ export default function BudgetDashboard() {
                     <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
                     <span className="text-sm font-medium text-gray-700">Restant</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(remainingBudget)}</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {overdraftEnabled ? formatCurrency(Math.max(0, remainingBudget)) : formatCurrency(remainingBudget)}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
                     className="bg-blue-500 h-3 rounded-full" 
-                    style={{ width: `${totalIncome > 0 ? Math.max(0, (remainingBudget / totalIncome) * 100) : 0}%` }}
+                    style={{ width: `${totalIncome > 0 ? Math.max(0, (Math.max(0, remainingBudget) / totalIncome) * 100) : 0}%` }}
                   ></div>
                 </div>
+
+                {overdraftEnabled && (
+                  <>
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex items-center">
+                        <div className="w-4 h-4 bg-orange-500 rounded mr-3"></div>
+                        <span className="text-sm font-medium text-gray-700">Découvert Utilisé</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{formatCurrency(usedOverdraft)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-orange-500 h-3 rounded-full" 
+                        style={{ width: `${overdraftLimit > 0 ? (usedOverdraft / overdraftLimit) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -994,8 +1040,26 @@ export default function BudgetDashboard() {
             </div>
           </TabsContent>
 
-          {/* Income Tab */}
-          <TabsContent value="income">
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Tabs defaultValue="income" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="income" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Revenus
+                </TabsTrigger>
+                <TabsTrigger value="deductions" className="flex items-center gap-2">
+                  <Minus className="h-4 w-4" />
+                  Prélèvements
+                </TabsTrigger>
+                <TabsTrigger value="overdraft" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Découvert
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Income Sub-Tab */}
+              <TabsContent value="income">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Income Form */}
               <Card>
@@ -1319,7 +1383,65 @@ export default function BudgetDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              </div>
+              </TabsContent>
+
+              {/* Deductions Sub-Tab */}
+              <TabsContent value="deductions">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Move the existing deductions content here */}
+                  <p>Contenu des prélèvements sera ajouté ici</p>
+                </div>
+              </TabsContent>
+
+              {/* Overdraft Sub-Tab */}
+              <TabsContent value="overdraft">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configuration du Découvert</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="overdraft-enabled"
+                        checked={overdraftEnabled}
+                        onCheckedChange={(checked) => setOverdraftEnabled(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="overdraft-enabled" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Droit au découvert
+                      </label>
+                    </div>
+
+                    {overdraftEnabled && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Limite de découvert (€)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={overdraftLimit}
+                          onChange={(e) => setOverdraftLimit(Number(e.target.value))}
+                          placeholder="Ex: 300"
+                          className="max-w-xs"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Le découvert permet de continuer à dépenser même quand le budget est à 0€
+                        </p>
+                      </div>
+                    )}
+
+                    {!overdraftEnabled && (
+                      <p className="text-sm text-gray-500">
+                        Sans découvert, le budget peut devenir négatif si les prélèvements dépassent les revenus.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>

@@ -312,10 +312,15 @@ export default function BudgetDashboard() {
 
   const rawBudget = processedIncomesTotal - processedDeductionsTotal;
   
-  // Overdraft logic
-  const currentAvailableBudget = overdraftEnabled ? Math.max(0, rawBudget) : rawBudget;
-  const usedOverdraft = overdraftEnabled && rawBudget < 0 ? Math.abs(rawBudget) : 0;
+  // Overdraft logic - use total budget for dashboard, not just processed amounts
+  const currentAvailableBudget = overdraftEnabled ? Math.max(0, remainingBudget) : remainingBudget;
+  const usedOverdraft = overdraftEnabled && remainingBudget < 0 ? Math.abs(remainingBudget) : 0;
   const remainingOverdraft = overdraftEnabled ? Math.max(0, overdraftLimit - usedOverdraft) : 0;
+  
+  // For monthly tracking, use processed amounts
+  const monthlyCurrentAvailableBudget = overdraftEnabled ? Math.max(0, rawBudget) : rawBudget;
+  const monthlyUsedOverdraft = overdraftEnabled && rawBudget < 0 ? Math.abs(rawBudget) : 0;
+  const monthlyRemainingOverdraft = overdraftEnabled ? Math.max(0, overdraftLimit - monthlyUsedOverdraft) : 0;
 
 
 
@@ -789,8 +794,8 @@ export default function BudgetDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-500">Budget Actuel</p>
-                      <p className={`text-lg font-bold ${currentAvailableBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(currentAvailableBudget)}
+                      <p className={`text-lg font-bold ${monthlyCurrentAvailableBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(monthlyCurrentAvailableBudget)}
                       </p>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-lg">

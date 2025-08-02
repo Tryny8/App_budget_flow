@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Income, type Deduction, insertIncomeSchema, insertDeductionSchema } from "@shared/schema";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const incomeFormSchema = insertIncomeSchema.extend({
   amount: z.string().min(1, "Le montant est requis").refine(
@@ -844,8 +844,32 @@ export default function BudgetDashboard() {
                           tickFormatter={(value) => `${Math.round(value)}€`}
                         />
                         <Tooltip 
-                          formatter={(value: number, name: string) => [`${formatCurrency(value)}`, name === 'budget' ? 'Budget' : name]}
+                          formatter={(value: number, name: string) => {
+                            const labels = {
+                              budget: 'Budget disponible',
+                              incomes: 'Revenus cumulés',
+                              deductions: 'Prélèvements cumulés'
+                            };
+                            return [`${formatCurrency(value)}`, labels[name as keyof typeof labels] || name];
+                          }}
                           labelFormatter={(label) => `Le ${label} du mois`}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="incomes" 
+                          stroke="#16a34a" 
+                          strokeWidth={2}
+                          dot={{ fill: '#16a34a', strokeWidth: 1, r: 4 }}
+                          name="Revenus cumulés"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="deductions" 
+                          stroke="#dc2626" 
+                          strokeWidth={2}
+                          dot={{ fill: '#dc2626', strokeWidth: 1, r: 4 }}
+                          name="Prélèvements cumulés"
                         />
                         <Line 
                           type="monotone" 
@@ -854,6 +878,7 @@ export default function BudgetDashboard() {
                           strokeWidth={3}
                           dot={{ fill: '#2563eb', strokeWidth: 2, r: 6 }}
                           activeDot={{ r: 8, stroke: '#2563eb', strokeWidth: 2 }}
+                          name="Budget disponible"
                         />
                       </LineChart>
                     </ResponsiveContainer>

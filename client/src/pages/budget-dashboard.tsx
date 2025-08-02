@@ -19,6 +19,13 @@ const incomeFormSchema = insertIncomeSchema.extend({
     (val) => !isNaN(Number(val)) && Number(val) > 0,
     "Le montant doit être un nombre positif"
   ),
+  incomeDate: z.string().min(1, "La date est requise").refine(
+    (val) => {
+      const num = Number(val);
+      return !isNaN(num) && num >= 1 && num <= 31;
+    },
+    "La date doit être entre 1 et 31"
+  ),
 });
 
 const deductionFormSchema = insertDeductionSchema.extend({
@@ -80,6 +87,7 @@ export default function BudgetDashboard() {
       description: "",
       amount: "",
       frequency: "monthly",
+      incomeDate: "",
     },
   });
 
@@ -97,7 +105,7 @@ export default function BudgetDashboard() {
   // Mutations
   const createIncomeMutation = useMutation({
     mutationFn: async (data: IncomeFormData) => {
-      const payload = { ...data, amount: data.amount };
+      const payload = { ...data, amount: data.amount, incomeDate: Number(data.incomeDate) };
       return apiRequest("POST", "/api/incomes", payload);
     },
     onSuccess: () => {
@@ -112,7 +120,7 @@ export default function BudgetDashboard() {
 
   const updateIncomeMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: IncomeFormData }) => {
-      const payload = { ...data, amount: data.amount };
+      const payload = { ...data, amount: data.amount, incomeDate: Number(data.incomeDate) };
       return apiRequest("PUT", `/api/incomes/${id}`, payload);
     },
     onSuccess: () => {
@@ -210,6 +218,7 @@ export default function BudgetDashboard() {
       description: income.description,
       amount: income.amount,
       frequency: income.frequency,
+      incomeDate: income.incomeDate?.toString() || "",
     });
   };
 
@@ -265,6 +274,38 @@ export default function BudgetDashboard() {
     return labels[frequency as keyof typeof labels] || frequency;
   };
 
+  // Monthly tracking functions
+  const getCurrentDayOfMonth = () => {
+    return new Date().getDate();
+  };
+
+  const getProcessedIncomes = () => {
+    const currentDay = getCurrentDayOfMonth();
+    return incomes.filter(income => income.incomeDate && income.incomeDate <= currentDay);
+  };
+
+  const getPendingIncomes = () => {
+    const currentDay = getCurrentDayOfMonth();
+    return incomes.filter(income => income.incomeDate && income.incomeDate > currentDay);
+  };
+
+  const getProcessedDeductions = () => {
+    const currentDay = getCurrentDayOfMonth();
+    return deductions.filter(deduction => deduction.deductionDate <= currentDay);
+  };
+
+  const getPendingDeductions = () => {
+    const currentDay = getCurrentDayOfMonth();
+    return deductions.filter(deduction => deduction.deductionDate > currentDay);
+  };
+
+  const processedIncomesTotal = getProcessedIncomes().reduce((sum, income) => sum + Number(income.amount), 0);
+  const pendingIncomesTotal = getPendingIncomes().reduce((sum, income) => sum + Number(income.amount), 0);
+  const processedDeductionsTotal = getProcessedDeductions().reduce((sum, deduction) => sum + Number(deduction.amount), 0);
+  const pendingDeductionsTotal = getPendingDeductions().reduce((sum, deduction) => sum + Number(deduction.amount), 0);
+
+  const currentAvailableBudget = processedIncomesTotal - processedDeductionsTotal;
+
   if (incomesLoading || deductionsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
   }
@@ -289,10 +330,14 @@ export default function BudgetDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <PieChart className="h-4 w-4" />
               Tableau de bord
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Suivi Mensuel
             </TabsTrigger>
             <TabsTrigger value="income" className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -450,6 +495,223 @@ export default function BudgetDashboard() {
             </Card>
           </TabsContent>
 
+          {/* Monthly Tracking Tab */}
+          <TabsContent value="monthly">
+            <div className="space-y-6">
+              {/* Current Status Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Budget Actuel Disponible</CardTitle>
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Wallet className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${currentAvailableBudget >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatCurrency(currentAvailableBudget)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Au {getCurrentDayOfMonth()} du mois</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Revenus à Venir</CardTitle>
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Plus className="h-4 w-4 text-green-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{formatCurrency(pendingIncomesTotal)}</div>
+                    <p className="text-xs text-muted-foreground">Encore à recevoir</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Prélèvements à Venir</CardTitle>
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <Minus className="h-4 w-4 text-red-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600">{formatCurrency(pendingDeductionsTotal)}</div>
+                    <p className="text-xs text-muted-foreground">Encore à débiter</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Processed vs Pending */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Processed Incomes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-green-600">Revenus Reçus ({getProcessedIncomes().length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getProcessedIncomes().map((income) => {
+                        const IconComponent = getIncomeIcon(income.description);
+                        return (
+                          <div key={income.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center">
+                              <div className="p-2 bg-green-100 rounded-lg mr-3">
+                                <IconComponent className="h-4 w-4 text-green-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{income.description}</p>
+                                <p className="text-sm text-gray-500">Reçu le {income.incomeDate} du mois</p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-green-600">{formatCurrency(Number(income.amount))}</span>
+                          </div>
+                        );
+                      })}
+                      {getProcessedIncomes().length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>Aucun revenu reçu pour l'instant ce mois-ci</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pending Incomes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-blue-600">Revenus en Attente ({getPendingIncomes().length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getPendingIncomes().map((income) => {
+                        const IconComponent = getIncomeIcon(income.description);
+                        return (
+                          <div key={income.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div className="flex items-center">
+                              <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                                <IconComponent className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{income.description}</p>
+                                <p className="text-sm text-gray-500">Prévu le {income.incomeDate} du mois</p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-blue-600">{formatCurrency(Number(income.amount))}</span>
+                          </div>
+                        );
+                      })}
+                      {getPendingIncomes().length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>Tous les revenus ont été reçus ce mois-ci</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Processed Deductions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-red-600">Prélèvements Effectués ({getProcessedDeductions().length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getProcessedDeductions().map((deduction) => {
+                        const IconComponent = getCategoryIcon(deduction.category);
+                        return (
+                          <div key={deduction.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                            <div className="flex items-center">
+                              <div className="p-2 bg-red-100 rounded-lg mr-3">
+                                <IconComponent className="h-4 w-4 text-red-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{deduction.description}</p>
+                                <p className="text-sm text-gray-500">Débité le {deduction.deductionDate} du mois</p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-red-600">-{formatCurrency(Number(deduction.amount))}</span>
+                          </div>
+                        );
+                      })}
+                      {getProcessedDeductions().length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>Aucun prélèvement effectué pour l'instant ce mois-ci</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pending Deductions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-orange-600">Prélèvements en Attente ({getPendingDeductions().length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getPendingDeductions().map((deduction) => {
+                        const IconComponent = getCategoryIcon(deduction.category);
+                        return (
+                          <div key={deduction.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <div className="flex items-center">
+                              <div className="p-2 bg-orange-100 rounded-lg mr-3">
+                                <IconComponent className="h-4 w-4 text-orange-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{deduction.description}</p>
+                                <p className="text-sm text-gray-500">Prévu le {deduction.deductionDate} du mois</p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-orange-600">-{formatCurrency(Number(deduction.amount))}</span>
+                          </div>
+                        );
+                      })}
+                      {getPendingDeductions().length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>Tous les prélèvements ont été effectués ce mois-ci</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Budget Projection */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Projection Fin de Mois</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-500">Budget Actuel</p>
+                      <p className={`text-lg font-bold ${currentAvailableBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(currentAvailableBudget)}
+                      </p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-500">Revenus Restants</p>
+                      <p className="text-lg font-bold text-green-600">+{formatCurrency(pendingIncomesTotal)}</p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-500">Prélèvements Restants</p>
+                      <p className="text-lg font-bold text-red-600">-{formatCurrency(pendingDeductionsTotal)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 mb-2">Budget Prévisionnel Fin de Mois</p>
+                      <p className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        {formatCurrency(remainingBudget)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Income Tab */}
           <TabsContent value="income">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -512,6 +774,20 @@ export default function BudgetDashboard() {
                         )}
                       />
 
+                      <FormField
+                        control={incomeForm.control}
+                        name="incomeDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date de Crédit (jour du mois)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="1" max="31" placeholder="Ex: 25" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <div className="flex gap-2">
                         <Button 
                           type="submit" 
@@ -554,7 +830,10 @@ export default function BudgetDashboard() {
                             </div>
                             <div>
                               <h4 className="font-medium text-gray-900">{income.description}</h4>
-                              <p className="text-sm text-gray-500">{getFrequencyLabel(income.frequency)}</p>
+                              <p className="text-sm text-gray-500">
+                                {getFrequencyLabel(income.frequency)} 
+                                {income.incomeDate && ` • Le ${income.incomeDate} du mois`}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-4">

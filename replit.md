@@ -34,16 +34,17 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Schema
 - **Users Table**: Basic user authentication with username/password
-- **Incomes Table**: Income tracking with description, amount, frequency (monthly/weekly/yearly)
-- **Deductions Table**: Expense tracking with categorization (housing, transport, utilities, etc.) and monthly scheduling
+- **Incomes Table**: Income tracking with description, amount, frequency (monthly/weekly/yearly), and income date (day of month 1-31)
+- **Deductions Table**: Expense tracking with categorization (housing, transport, utilities, etc.) and deduction date (day of month 1-31)
 
 ### Authentication & Authorization
 - Currently implements basic user structure but authentication middleware is not yet active
 - Session management infrastructure prepared with connect-pg-simple for PostgreSQL session storage
 
 ### API Structure
-- **Income Endpoints**: GET, POST, PUT operations for income management
-- **Deduction Endpoints**: Similar CRUD operations for expense tracking
+- **Income Endpoints**: GET, POST, PUT operations for income management with date tracking
+- **Deduction Endpoints**: Similar CRUD operations for expense tracking with date scheduling
+- **Monthly Tracking**: Date-based filtering to determine processed vs pending transactions
 - **Validation Layer**: Request validation using Zod schemas before database operations
 - **Response Format**: Consistent JSON responses with proper HTTP status codes
 

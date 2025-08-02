@@ -14,6 +14,7 @@ export const incomes = pgTable("incomes", {
   description: text("description").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   frequency: text("frequency").notNull().default("monthly"), // monthly, weekly, yearly
+  incomeDate: integer("income_date").notNull(), // day of month (1-31)
   userId: varchar("user_id").references(() => users.id),
 });
 

@@ -361,7 +361,8 @@ var vite_config_default = defineConfig({
       strict: true,
       deny: ["**/.*"]
     }
-  }
+  },
+  base: "/App_budget_flow/"
 });
 
 // server/vite.ts

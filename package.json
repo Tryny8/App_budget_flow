@@ -101,5 +101,6 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
-  }
+  },
+  "homepage": "https://tryny8.github.io/App_budget_flow/"
 }
